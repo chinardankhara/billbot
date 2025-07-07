@@ -36,13 +36,87 @@ jetty/
 └── tests/
 ```
 
-## Development Setup
+## Quick Start: Email Classifier
 
-1. Install dependencies: `pip install -r requirements.txt`
+The email classifier is a standalone component that can classify emails as `INVOICE` or `NOT_INVOICE` using Google's Gemini AI.
+
+### Setup
+
+1. **Install dependencies:**
+   ```bash
+   pip install -r requirements.txt
+   # or for development
+   pip install -e .
+   ```
+
+2. **Set up Gemini API key:**
+   ```bash
+   export GEMINI_API_KEY="your-gemini-api-key"
+   ```
+
+3. **Run the example:**
+   ```bash
+   python example_usage.py
+   ```
+
+### Usage
+
+#### Command Line Interface
+
+```bash
+# Classify a single email file
+python -m src.email_classifier.classifier single sample_emails/testemail.txt
+```
+
+#### Programmatic Usage
+
+```python
+from src.utils.email_parser import EmailParser
+from src.email_classifier.classifier import EmailClassifier
+
+# Initialize components
+parser = EmailParser()
+classifier = EmailClassifier()
+
+# Parse and classify an email
+parsed_email = parser.parse_from_file("sample_emails/testemail.txt")
+result = classifier.classify_email(parsed_email)
+
+print(f"Classification: {result.classification}")
+print(f"Confidence: {result.confidence}")
+print(f"Reasoning: {result.reasoning}")
+```
+
+### Features
+
+- **MIME Email Parsing**: Extracts text from email bodies and headers (supports .txt and .eml formats)
+- **Direct PDF Processing**: Uses Gemini's native PDF vision capabilities (no text extraction needed)
+- **Structured Output**: Uses Gemini 2.0 Flash with structured JSON output for consistency
+- **Batch Processing**: Classify multiple emails at once
+- **Confidence Scoring**: Each classification includes a confidence score
+- **Detailed Reasoning**: AI provides explanation for each classification
+- **Reusable Components**: Email parser can be shared with invoice extractor and other modules
+
+### Architecture
+
+The email classifier follows a modular design with separation of concerns:
+
+- **`utils/email_parser.py`**: Handles MIME parsing and attachment extraction (reusable across modules)
+- **`email_classifier/classifier.py`**: Unified module with Gemini AI classification and CLI interface
+- **`email_classifier/prompts/`**: Stores prompt templates in markdown files for easy modification
+- **Direct PDF Support**: Uses Gemini's native PDF processing instead of text extraction
+
+## Full Platform Development
+
+For the complete serverless AP platform architecture:
+
+### Development Setup
+
+1. Install dependencies: `pip install -e .`
 2. Set up AWS credentials
 3. Configure environment variables
 4. Deploy infrastructure: `sam deploy`
 
-## Deployment
+### Deployment
 
 All AWS resources are defined as Infrastructure as Code using AWS SAM. Lambda dependencies are managed via AWS Lambda Layers built in Docker containers. 
