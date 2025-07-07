@@ -38,7 +38,6 @@ Provide your classification as a JSON object with the following structure:
 ```json
 {
   "classification": "INVOICE" or "NOT_INVOICE",
-  "confidence": 0.0-1.0,
   "reasoning": "Brief explanation of why this classification was chosen"
 }
 ```
