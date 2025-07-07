@@ -17,7 +17,7 @@ from google import genai
 from google.genai import types
 from pydantic import BaseModel, Field
 
-from ..utils.email_parser import EmailParser, ParsedEmail
+from email_parser import EmailParser, ParsedEmail
 
 MAX_OUTPUT_TOKENS=3600
 
@@ -125,6 +125,19 @@ class EmailClassifier:
         except Exception as e:
             raise RuntimeError(f"Classification failed: {e}")
     
+    def classify_email_content(self, email_content: str) -> EmailClassificationResult:
+        """
+        Classify an email from raw content.
+        
+        Args:
+            email_content: Raw email content as string or bytes
+            
+        Returns:
+            EmailClassificationResult with classification details
+        """
+        parsed_email = self.email_parser.parse_email(email_content)
+        return self.classify_email(parsed_email)
+
     def classify_email_file(self, file_path: str) -> EmailClassificationResult:
         """
         Classify an email from a file.
