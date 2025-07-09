@@ -8,7 +8,8 @@ import boto3
 import os
 from typing import Dict, Any
 
-# Import our core business logic
+# Import our core business logic  
+# Note: Files are copied to Lambda root, so we import directly by filename
 from invoice_extractor import InvoiceExtractor
 from dynamo_writer import InvoiceDynamoWriter
 
