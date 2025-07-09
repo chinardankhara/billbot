@@ -1,5 +1,5 @@
 """
-DynamoDB writer for invoice data
+DynamoDB writer for invoice data - Lambda version
 """
 
 import boto3
@@ -8,7 +8,8 @@ from datetime import datetime
 from typing import Optional
 from botocore.exceptions import ClientError
 
-from .extractor import InvoiceExtractionResult
+# Import from the Lambda-specific extractor file
+from invoice_extractor import InvoiceExtractionResult
 
 
 class InvoiceDynamoWriter:

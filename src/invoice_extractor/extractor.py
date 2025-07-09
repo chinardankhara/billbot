@@ -1,5 +1,5 @@
 """
-Invoice data extractor using Google Gemini
+Invoice data extractor using Google Gemini - Lambda version
 """
 
 import json
@@ -18,7 +18,8 @@ from google import genai
 from google.genai import types
 from pydantic import BaseModel, Field
 
-from ..utils.email_parser import EmailParser, ParsedEmail
+# Lambda-specific import (no relative imports)
+from email_parser import EmailParser, ParsedEmail
 
 MAX_OUTPUT_TOKENS = 12000
 
