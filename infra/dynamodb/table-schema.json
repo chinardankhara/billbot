@@ -1,0 +1,70 @@
+{
+    "TableName": "Invoices",
+    "AttributeDefinitions": [
+        {
+            "AttributeName": "processed_invoice_uuid",
+            "AttributeType": "S"
+        },
+        {
+            "AttributeName": "payment_intent_id",
+            "AttributeType": "S"
+        },
+        {
+            "AttributeName": "processing_status",
+            "AttributeType": "S"
+        },
+        {
+            "AttributeName": "due_date",
+            "AttributeType": "S"
+        }
+    ],
+    "KeySchema": [
+        {
+            "AttributeName": "processed_invoice_uuid",
+            "KeyType": "HASH"
+        }
+    ],
+    "GlobalSecondaryIndexes": [
+        {
+            "IndexName": "PaymentIntentIndex",
+            "KeySchema": [
+                {
+                    "AttributeName": "payment_intent_id",
+                    "KeyType": "HASH"
+                }
+            ],
+            "Projection": {
+                "ProjectionType": "ALL"
+            },
+            "ProvisionedThroughput": {
+                "ReadCapacityUnits": 5,
+                "WriteCapacityUnits": 5
+            }
+        },
+        {
+            "IndexName": "StatusDateIndex",
+            "KeySchema": [
+                {
+                    "AttributeName": "processing_status",
+                    "KeyType": "HASH"
+                },
+                {
+                    "AttributeName": "due_date",
+                    "KeyType": "RANGE"
+                }
+            ],
+            "Projection": {
+                "ProjectionType": "ALL"
+            },
+            "ProvisionedThroughput": {
+                "ReadCapacityUnits": 5,
+                "WriteCapacityUnits": 5
+            }
+        }
+    ],
+    "BillingMode": "PROVISIONED",
+    "ProvisionedThroughput": {
+        "ReadCapacityUnits": 5,
+        "WriteCapacityUnits": 5
+    }
+} 
