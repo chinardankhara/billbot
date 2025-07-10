@@ -1,29 +1,71 @@
 #!/usr/bin/env python3
 """
-End-to-end webhook test: Create invoice → Trigger Stripe webhook → Verify update
+End-to-end webhook test: Trigger Stripe webhook → Create matching invoice → Verify update
 """
 
 import boto3
 import subprocess
 import json
 import time
+import re
 from datetime import datetime
 
-def create_test_invoice_for_webhook():
-    """Create a test invoice that we can use for webhook testing"""
+def trigger_stripe_webhook():
+    """Trigger a Stripe webhook and capture the generated payment intent ID"""
+    
+    print("🎯 Triggering Stripe webhook...")
+    
+    try:
+        # Trigger webhook (Stripe CLI generates random payment intent ID)
+        result = subprocess.run([
+            'stripe', 'trigger', 'payment_intent.succeeded'
+        ], capture_output=True, text=True)
+        
+        if result.returncode == 0:
+            print("✅ Webhook triggered successfully")
+            
+            # Extract payment intent ID from Stripe CLI output
+            # Look for patterns like "pi_..." in the output
+            output = result.stdout + result.stderr
+            pi_match = re.search(r'pi_[a-zA-Z0-9_]+', output)
+            
+            if pi_match:
+                payment_intent_id = pi_match.group(0)
+                print(f"   Generated Payment Intent: {payment_intent_id}")
+                return payment_intent_id
+            else:
+                print("⚠️  Could not extract payment intent ID from output:")
+                print(f"   Output: {output}")
+                # Fallback: use a test ID and send webhook manually
+                return "pi_test_fallback_" + str(int(time.time()))
+        else:
+            print(f"❌ Error triggering webhook:")
+            print(f"   stderr: {result.stderr}")
+            print(f"   stdout: {result.stdout}")
+            return None
+            
+    except FileNotFoundError:
+        print("❌ Stripe CLI not found. Install with: brew install stripe/stripe-cli/stripe")
+        return None
+    except Exception as e:
+        print(f"❌ Error running stripe CLI: {e}")
+        return None
+
+def create_test_invoice_with_payment_intent(payment_intent_id):
+    """Create a test invoice with the given payment intent ID"""
+    
+    print(f"\n📄 Creating test invoice for payment intent: {payment_intent_id}")
     
     # Initialize DynamoDB
     dynamodb = boto3.resource('dynamodb', region_name='us-east-1')
     table = dynamodb.Table('Invoices')
     
-    # Create a test payment intent ID that matches what Stripe might generate
-    test_payment_intent_id = "pi_test_e2e_" + str(int(time.time()))
     test_uuid = f"test-webhook-{int(time.time())}"
     
     test_invoice = {
         'processed_invoice_uuid': test_uuid,
         'processing_status': 'PAYMENT_INITIATED',
-        'payment_intent_id': test_payment_intent_id,
+        'payment_intent_id': payment_intent_id,
         'vendor_name': 'E2E Test Vendor',
         'invoice_id': 'E2E-TEST-001',
         'total_amount': '20.00',
@@ -41,72 +83,113 @@ def create_test_invoice_for_webhook():
         table.put_item(Item=test_invoice)
         print(f"✅ Created test invoice:")
         print(f"   UUID: {test_uuid}")
-        print(f"   Payment Intent: {test_payment_intent_id}")
+        print(f"   Payment Intent: {payment_intent_id}")
         print(f"   Status: PAYMENT_INITIATED")
         
-        return test_payment_intent_id, test_uuid
+        return test_uuid
         
     except Exception as e:
         print(f"❌ Error creating test invoice: {e}")
-        return None, None
+        return None
 
-def trigger_stripe_webhook_for_payment(payment_intent_id):
-    """Trigger a Stripe webhook for a specific payment intent"""
+def send_webhook_manually(payment_intent_id):
+    """Send a webhook manually if Stripe CLI doesn't work"""
     
-    print(f"\n🎯 Triggering Stripe webhook for: {payment_intent_id}")
+    print(f"\n🔧 Sending webhook manually for: {payment_intent_id}")
+    
+    webhook_payload = {
+        "id": "evt_test_webhook",
+        "object": "event",
+        "api_version": "2020-08-27",
+        "created": int(time.time()),
+        "data": {
+            "object": {
+                "id": payment_intent_id,
+                "object": "payment_intent",
+                "amount": 2000,
+                "currency": "usd",
+                "status": "succeeded"
+            }
+        },
+        "livemode": False,
+        "pending_webhooks": 1,
+        "request": {
+            "id": "req_test",
+            "idempotency_key": None
+        },
+        "type": "payment_intent.succeeded"
+    }
     
     try:
-        # Trigger webhook with specific payment intent ID
-        result = subprocess.run([
-            'stripe', 'trigger', 'payment_intent.succeeded',
-            '--add', f'payment_intent:id={payment_intent_id}'
-        ], capture_output=True, text=True)
+        import requests
         
-        if result.returncode == 0:
-            print(f"✅ Webhook triggered successfully")
-            print(f"   Output: {result.stdout.strip()}")
+        # Your API Gateway webhook URL
+        webhook_url = "https://qdot6d8anh.execute-api.us-east-1.amazonaws.com/webhooks/stripe"
+        
+        # Note: In real usage, you'd need proper Stripe signature
+        # For testing, we'll assume signature verification can be disabled
+        response = requests.post(
+            webhook_url,
+            json=webhook_payload,
+            headers={
+                'Content-Type': 'application/json',
+                'Stripe-Signature': 'test_signature'  # This will fail signature verification
+            }
+        )
+        
+        print(f"   Response: {response.status_code}")
+        if response.status_code == 200:
+            print("✅ Webhook sent successfully")
             return True
         else:
-            print(f"❌ Error triggering webhook: {result.stderr}")
+            print(f"❌ Webhook failed: {response.text}")
             return False
             
+    except ImportError:
+        print("❌ requests library not available. Install with: pip install requests")
+        return False
     except Exception as e:
-        print(f"❌ Error running stripe CLI: {e}")
-        print("   Make sure you have Stripe CLI installed and configured")
+        print(f"❌ Error sending webhook: {e}")
         return False
 
-def check_invoice_update(uuid):
-    """Check if the invoice status was updated to PAID"""
+def check_invoice_update(uuid, max_attempts=6):
+    """Check if the invoice status was updated to PAID (with retries)"""
     
-    print(f"\n🔍 Checking invoice update...")
+    print(f"\n🔍 Checking invoice update (up to {max_attempts} attempts)...")
     
     dynamodb = boto3.resource('dynamodb', region_name='us-east-1')
     table = dynamodb.Table('Invoices')
     
-    try:
-        response = table.get_item(Key={'processed_invoice_uuid': uuid})
-        
-        if 'Item' in response:
-            invoice = response['Item']
-            status = invoice.get('processing_status', 'Unknown')
+    for attempt in range(max_attempts):
+        try:
+            response = table.get_item(Key={'processed_invoice_uuid': uuid})
             
-            print(f"📄 Invoice: {uuid}")
-            print(f"   Status: {status}")
-            print(f"   Last Updated: {invoice.get('last_updated', 'Unknown')}")
-            
-            if status == 'PAID':
-                print(f"🎉 SUCCESS! Invoice status updated to PAID")
-                return True
+            if 'Item' in response:
+                invoice = response['Item']
+                status = invoice.get('processing_status', 'Unknown')
+                
+                print(f"📄 Invoice: {uuid} (attempt {attempt + 1})")
+                print(f"   Status: {status}")
+                print(f"   Last Updated: {invoice.get('last_updated', 'Unknown')}")
+                
+                if status == 'PAID':
+                    print(f"🎉 SUCCESS! Invoice status updated to PAID")
+                    return True
+                else:
+                    print(f"⚠️  Status is still: {status}")
+                    if attempt < max_attempts - 1:
+                        print(f"   Waiting 3 seconds before retry...")
+                        time.sleep(3)
             else:
-                print(f"⚠️  Status is still: {status}")
+                print(f"❌ Invoice not found: {uuid}")
                 return False
-        else:
-            print(f"❌ Invoice not found: {uuid}")
+                
+        except Exception as e:
+            print(f"❌ Error checking invoice: {e}")
             return False
-            
-    except Exception as e:
-        print(f"❌ Error checking invoice: {e}")
-        return False
+    
+    print(f"❌ Invoice status did not update to PAID after {max_attempts} attempts")
+    return False
 
 def main():
     """Run complete end-to-end webhook test"""
@@ -114,24 +197,22 @@ def main():
     print("🚀 End-to-End Webhook Test")
     print("=" * 50)
     
-    # Step 1: Create test invoice
-    payment_intent_id, uuid = create_test_invoice_for_webhook()
+    # Step 1: Trigger webhook and get payment intent ID
+    payment_intent_id = trigger_stripe_webhook()
     if not payment_intent_id:
+        print("❌ Could not trigger webhook or get payment intent ID")
         return False
     
-    # Step 2: Wait a moment for consistency
-    print("\n⏳ Waiting 2 seconds for DynamoDB consistency...")
-    time.sleep(2)
-    
-    # Step 3: Trigger webhook
-    if not trigger_stripe_webhook_for_payment(payment_intent_id):
+    # Step 2: Create test invoice with the payment intent ID
+    uuid = create_test_invoice_with_payment_intent(payment_intent_id)
+    if not uuid:
         return False
     
-    # Step 4: Wait for webhook processing
-    print("\n⏳ Waiting 5 seconds for webhook processing...")
+    # Step 3: Wait for webhook processing
+    print("\n⏳ Waiting 5 seconds for webhook to process...")
     time.sleep(5)
     
-    # Step 5: Check results
+    # Step 4: Check results (with retries)
     success = check_invoice_update(uuid)
     
     print("\n" + "=" * 50)
@@ -140,6 +221,11 @@ def main():
         print("   Webhook system is working correctly!")
     else:
         print("❌ END-TO-END TEST FAILED")
+        print("   Possible issues:")
+        print("   1. Webhook signature verification failed")
+        print("   2. API Gateway not configured correctly") 
+        print("   3. Lambda function error")
+        print("   4. DynamoDB permissions issue")
         print("   Check CloudWatch logs for details")
     
     return success
