@@ -1,12 +1,12 @@
-# Jetty
+# BillBot
 
 **AI-Powered Invoice Processing & Payment Automation**
 
-Jetty demonstrates the transformative power of AI agents in enterprise workflows by fully automating invoice processing—from email receipt to payment execution. Built with modern serverless architecture and powered by Google Gemini AI, it showcases how intelligent automation can revolutionize accounts payable operations.
+BillBot demonstrates the transformative power of AI agents in enterprise workflows by fully automating invoice processing—from email receipt to payment execution. Built with modern serverless architecture and powered by Google Gemini AI, it showcases how intelligent automation can revolutionize accounts payable operations.
 
 ## What It Does
 
-Jetty automatically:
+BillBot automatically:
 - **Receives** invoices via email (any format, with PDFs)
 - **Classifies** emails using AI to identify invoices
 - **Extracts** structured data (vendor, amount, due date, etc.)
@@ -68,7 +68,7 @@ aws dynamodb create-table --cli-input-json file://infra/dynamodb/table-schema.js
 
 # 2. Build and deploy Lambda functions
 cd lambda_functions/email_classifier
-docker build -t jetty-email-classifier .
+docker build -t billbot-email-classifier .
 # ... (see infra/README.md for complete deployment guide)
 
 # 3. Test locally
@@ -114,7 +114,7 @@ DYNAMODB_TABLE_NAME=Invoices
 ## Project Structure
 
 ```
-jetty/
+billbot/
 ├── src/                      # Core business logic
 ├── lambda_functions/         # AWS Lambda handlers
 ├── infra/                   # Infrastructure as Code
@@ -124,7 +124,7 @@ jetty/
 
 ## Testing
 
-Run the included examples to see Jetty in action:
+Run the included examples to see BillBot in action:
 ```bash
 python3 tests/example_classifier_usage.py    # Test AI classification
 python3 tests/example_invoice_extraction.py  # Test data extraction

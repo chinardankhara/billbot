@@ -76,7 +76,7 @@ class StripePaymentClient:
                     'vendor_name': vendor_name,
                     'invoice_id': invoice_id,
                     'processed_invoice_uuid': processed_invoice_uuid,
-                    'jetty_payment': 'true'
+                    'billbot_payment': 'true'
                 },
                 # Don't auto-confirm - payment method needs to be added first
                 # In production, you'd either:
@@ -207,13 +207,13 @@ class StripePaymentClient:
                     'vendor_name': vendor_name,
                     'invoice_id': invoice_id,
                     'processed_invoice_uuid': processed_invoice_uuid,
-                    'jetty_payment': 'test',
+                    'billbot_payment': 'test',
                     'test_payment_type': payment_method_type
                 },
                 payment_method_types=payment_method_types,
                 payment_method=test_payment_method_id,
                 confirm=True,
-                return_url='https://test-jetty.com/complete'
+                return_url='https://test-billbot.com/complete'
             )
             
             return PaymentResult(

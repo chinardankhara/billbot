@@ -1,6 +1,6 @@
-# Jetty Infrastructure
+# BillBot Infrastructure
 
-Minimal, transferable infrastructure configuration for deploying Jetty on AWS using Docker containers and basic AWS CLI commands.
+Minimal, transferable infrastructure configuration for deploying BillBot on AWS using Docker containers and basic AWS CLI commands.
 
 ## Philosophy: Transferable Binaries > Service-Specific Templates
 
@@ -26,7 +26,7 @@ aws dynamodb create-table --cli-input-json file://infra/dynamodb/table-schema.js
 ```bash
 # Create role for status-updater
 aws iam create-role \
-  --role-name jetty-status-updater-role \
+  --role-name billbot-status-updater-role \
   --assume-role-policy-document '{
     "Version": "2012-10-17",
     "Statement": [{
@@ -38,8 +38,8 @@ aws iam create-role \
 
 # Attach policy
 aws iam put-role-policy \
-  --role-name jetty-status-updater-role \
-  --policy-name jetty-status-updater-policy \
+  --role-name billbot-status-updater-role \
+  --policy-name billbot-status-updater-policy \
   --policy-document file://infra/iam/status-updater-policy.json
 
 # Repeat for other Lambda functions...
@@ -49,20 +49,20 @@ aws iam put-role-policy \
 ```bash
 # Build and push each Lambda
 cd lambda_functions/status_updater
-docker build -t jetty-status-updater .
-aws ecr create-repository --repository-name jetty-status-updater
-docker tag jetty-status-updater:latest {account}.dkr.ecr.{region}.amazonaws.com/jetty-status-updater:latest
-docker push {account}.dkr.ecr.{region}.amazonaws.com/jetty-status-updater:latest
+docker build -t billbot-status-updater .
+aws ecr create-repository --repository-name billbot-status-updater
+docker tag billbot-status-updater:latest {account}.dkr.ecr.{region}.amazonaws.com/billbot-status-updater:latest
+docker push {account}.dkr.ecr.{region}.amazonaws.com/billbot-status-updater:latest
 ```
 
 ### 4. Create Lambda Functions
 ```bash
 # Create Lambda function from Docker image
 aws lambda create-function \
-  --function-name jetty-status-updater \
+  --function-name billbot-status-updater \
   --package-type Image \
-  --code ImageUri={account}.dkr.ecr.{region}.amazonaws.com/jetty-status-updater:latest \
-  --role arn:aws:iam::{account}:role/jetty-status-updater-role \
+  --code ImageUri={account}.dkr.ecr.{region}.amazonaws.com/billbot-status-updater:latest \
+  --role arn:aws:iam::{account}:role/billbot-status-updater-role \
   --environment Variables='{
     "STRIPE_WEBHOOK_SECRET":"whsec_...",
     "DYNAMODB_TABLE_NAME":"Invoices"
@@ -75,7 +75,7 @@ aws lambda create-function \
 ```bash
 # Create HTTP API for webhook endpoint
 aws apigatewayv2 create-api \
-  --name jetty-webhooks \
+  --name billbot-webhooks \
   --protocol-type HTTP
 
 # Add POST /webhooks/stripe route to status-updater Lambda

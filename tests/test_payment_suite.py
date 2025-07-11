@@ -68,7 +68,7 @@ TEST_SCENARIOS = [
 def run_payment_test_suite():
     """Run comprehensive payment tests across all scenarios"""
     
-    print("🚀 Jetty Payment Test Suite")
+    print("🚀 BillBot Payment Test Suite")
     print("=" * 60)
     print("Testing various payment methods and failure scenarios")
     print("=" * 60)
@@ -168,7 +168,7 @@ def run_payment_test_suite():
         
         print("\n🔗 View all payments in Stripe Dashboard:")
         print("   https://dashboard.stripe.com/test/payments")
-        print("   Filter by metadata: jetty_payment = test")
+        print("   Filter by metadata: billbot_payment = test")
         
         return results
         

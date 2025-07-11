@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
-Example usage of the Jetty Email Classifier
+Example usage of the BillBot Email Classifier
 """
 
 from src.email_classifier.classifier import EmailClassifier
 
 def main():
-    print("🚀 Jetty Email Classifier Demo")
+    print("🚀 BillBot Email Classifier Demo")
     print("=" * 50)
     
     # Initialize the classifier

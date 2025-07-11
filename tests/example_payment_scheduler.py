@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """
-Example usage of the Jetty Payment Scheduler
+Example usage of the BillBot Payment Scheduler
 """
 
 from src.payment_scheduler.scheduler import PaymentScheduler
 from src.payment_scheduler.stripe_client import StripePaymentClient
 
 def main():
-    print("🚀 Jetty Payment Scheduler Demo")
+    print("🚀 BillBot Payment Scheduler Demo")
     print("=" * 50)
     
     # Initialize the Stripe client

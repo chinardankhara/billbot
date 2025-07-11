@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
-Example usage of the Jetty Invoice Extractor
+Example usage of the BillBot Invoice Extractor
 """
 
 from src.invoice_extractor.extractor import InvoiceExtractor
 
 def main():
-    print("🚀 Jetty Invoice Extractor Demo")
+    print("🚀 BillBot Invoice Extractor Demo")
     print("=" * 50)
     
     # Initialize the extractor

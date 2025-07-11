@@ -29,7 +29,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     payment_window_days = int(os.getenv('PAYMENT_WINDOW_DAYS', '7'))
     
     # Check if we're in production or demo mode
-    is_production = os.getenv('JETTY_ENV', 'demo').lower() == 'production'
+    is_production = os.getenv('BILLBOT_ENV', 'demo').lower() == 'production'
     
     print(f"🌍 Environment: {'PRODUCTION' if is_production else 'DEMO/TEST'}")
     

@@ -84,7 +84,7 @@ def update_invoice_status(invoice_uuid: str, status: str, payment_intent_id: str
         print(f"⚠️ Could not update DynamoDB: {e}")
 
 def main():
-    print("🚀 Jetty Payment Test with Real Stripe Integration")
+    print("🚀 BillBot Payment Test with Real Stripe Integration")
     print("=" * 60)
     
     print("\nThis test will:")
